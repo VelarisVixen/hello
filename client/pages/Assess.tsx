@@ -187,10 +187,10 @@ export default function Assess() {
           <div>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !symptoms.trim()}
               className="px-6 py-5 text-[15px] font-semibold"
             >
-              {loading ? "Analyzing..." : "Start assessing"}
+              {loading ? "Analyzing…" : "Start assessing"}
             </Button>
           </div>
         </form>
