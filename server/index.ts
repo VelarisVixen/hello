@@ -24,5 +24,8 @@ export function createServer() {
   // AI assessment
   app.post("/api/assess", handleAssess);
 
+  // Nearby hospitals via Google Places
+  app.get("/api/nearby-hospitals", handleNearbyHospitals);
+
   return app;
 }
