@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleAssess } from "./routes/assess";
+import { handleNearbyHospitals } from "./routes/places";
 
 export function createServer() {
   const app = express();
@@ -22,6 +23,9 @@ export function createServer() {
 
   // AI assessment
   app.post("/api/assess", handleAssess);
+
+  // Nearby hospitals via Google Places
+  app.get("/api/nearby-hospitals", handleNearbyHospitals);
 
   return app;
 }

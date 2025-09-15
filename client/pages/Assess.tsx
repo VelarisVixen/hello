@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import RiskGauge from "@/components/site/RiskGauge";
+import SymptomStats from "@/components/site/SymptomStats";
 
 type Coords = { lat: number; lon: number; accuracy?: number; address?: string };
 
@@ -17,6 +19,20 @@ export default function Assess() {
   const [causes, setCauses] = useState<string[]>([]);
   const [remedies, setRemedies] = useState<string[]>([]);
   const [care, setCare] = useState<string[]>([]);
+
+  type Hospital = {
+    name: string;
+    rating: number | null;
+    userRatingsTotal: number | null;
+    address: string;
+    openNow: boolean | null;
+    placeId: string;
+    lat: number | null;
+    lon: number | null;
+  };
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [hospitalsLoading, setHospitalsLoading] = useState(false);
+  const [hospitalsError, setHospitalsError] = useState<string | null>(null);
 
   const requestLocation = async (): Promise<Coords | null> => {
     if (!("geolocation" in navigator)) {
@@ -59,20 +75,23 @@ export default function Assess() {
           loc = await requestLocation();
         } catch {}
       }
-      const apiUrl = window.location.origin + "/api/assess";
+      const apiUrl = "/api/assess";
       let res: Response;
       try {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 30000);
         res = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
           body: JSON.stringify({
             symptoms,
             age: age ? Number(age) : undefined,
             sex,
             location: loc ?? undefined,
           }),
+          signal: ctrl.signal,
         });
+        clearTimeout(timeout);
       } catch (networkErr: any) {
         throw new Error(
           "Network error: failed to reach the server. " +
@@ -80,17 +99,33 @@ export default function Assess() {
         );
       }
 
-      const text = await res.text();
-      let data: any = {};
+      // Try JSON first using a clone to avoid consuming the body stream.
+      let data: any | null = null;
       try {
-        data = JSON.parse(text);
-      } catch {
-        data = { error: text };
+        data = await res.clone().json();
+      } catch {}
+
+      let rawText: string | null = null;
+      if (data == null) {
+        try {
+          rawText = await res.text();
+          try {
+            data = JSON.parse(rawText);
+          } catch {
+            data = { error: rawText };
+          }
+        } catch (readErr: any) {
+          throw new Error(
+            "Failed to read server response: " + (readErr?.message || ""),
+          );
+        }
       }
+
       if (!res.ok) {
         const serverMessage = data?.error || `${res.status} ${res.statusText}`;
         throw new Error(serverMessage);
       }
+
       setAnalysis(data.analysis ?? null);
       if (typeof data.riskScore === "number") setSeverity(data.riskScore);
       else if (typeof data.severity === "number") setSeverity(data.severity);
@@ -135,6 +170,55 @@ export default function Assess() {
             className="border-primary text-primary hover:bg-primary/5 px-3 py-2 h-auto"
           >
             Share location
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              setHospitalsError(null);
+              setHospitals([]);
+              setHospitalsLoading(true);
+              try {
+                let loc = coords;
+                if (!loc) loc = await requestLocation();
+                if (!loc)
+                  throw new Error(
+                    "Location required to search nearby hospitals",
+                  );
+                const url = new URL(
+                  "/api/nearby-hospitals",
+                  window.location.origin,
+                );
+                url.searchParams.set("lat", String(loc.lat));
+                url.searchParams.set("lon", String(loc.lon));
+                url.searchParams.set("radius", "5000");
+                const r = await fetch(url.toString());
+                const d = await r.json();
+                if (!r.ok) throw new Error(d?.error || r.statusText);
+                setHospitals(Array.isArray(d.hospitals) ? d.hospitals : []);
+              } catch (e: any) {
+                setHospitalsError(e?.message || "Failed to fetch hospitals");
+              } finally {
+                setHospitalsLoading(false);
+              }
+            }}
+            className="px-3 py-2 h-auto"
+          >
+            Hospitals near you
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              const nav = (window as any).appNavigate as
+                | undefined
+                | ((path: string, state?: any) => void);
+              const state = { analysis, causes, severity, symptoms };
+              if (nav) nav("/doctors", state);
+              else window.location.href = "/doctors";
+            }}
+            className="px-3 py-2 h-auto"
+          >
+            Book appointment
           </Button>
         </div>
 
@@ -197,18 +281,7 @@ export default function Assess() {
 
         {severity !== null && (
           <div className="mt-8">
-            <div className="mb-2 text-sm font-medium text-foreground/80">
-              Severity score
-            </div>
-            <div className="h-3 w-full rounded-full bg-accent">
-              <div
-                className="h-3 rounded-full bg-primary transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, severity))}%` }}
-              />
-            </div>
-            <div className="mt-1 text-xs text-foreground/60">
-              {severity}/100 (0=mild, 100=critical)
-            </div>
+            <RiskGauge score={severity} />
           </div>
         )}
 
@@ -263,6 +336,73 @@ export default function Assess() {
             )}
             {disclaimer && (
               <p className="mt-4 text-sm text-foreground/60">{disclaimer}</p>
+            )}
+          </div>
+        )}
+
+        {(severity !== null || causes.length > 0) && (
+          <SymptomStats symptoms={symptoms} causes={causes} />
+        )}
+
+        {(hospitalsLoading || hospitalsError || hospitals.length > 0) && (
+          <div className="mt-8 rounded-xl border border-border bg-background p-6">
+            <h2 className="text-xl font-semibold mb-3">Hospitals near you</h2>
+            {hospitalsLoading && (
+              <div className="text-foreground/70">
+                Searching nearby hospitals…
+              </div>
+            )}
+            {hospitalsError && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-destructive mb-3">
+                {hospitalsError}
+              </div>
+            )}
+            {hospitals.length > 0 && (
+              <ul className="grid gap-3">
+                {hospitals.map((h) => (
+                  <li
+                    key={h.placeId}
+                    className="p-4 rounded-lg border border-border"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="font-medium">{h.name}</div>
+                        <div className="text-sm text-foreground/70">
+                          {h.address}
+                        </div>
+                        <div className="text-xs text-foreground/60">
+                          {h.rating
+                            ? `Rating ${h.rating} (${h.userRatingsTotal ?? 0})`
+                            : "Rating N/A"}
+                          {h.openNow !== null
+                            ? ` • ${h.openNow ? "Open now" : "Closed"}`
+                            : ""}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <a
+                          href={`https://www.google.com/maps/place/?q=place_id:${h.placeId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-2 rounded-md border border-border text-sm hover:bg-accent"
+                        >
+                          Open in Maps
+                        </a>
+                        {h.lat !== null && h.lon !== null && (
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-2 rounded-md border border-border text-sm hover:bg-accent"
+                          >
+                            Directions
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}
