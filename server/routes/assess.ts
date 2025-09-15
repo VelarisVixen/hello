@@ -22,21 +22,14 @@ export const handleAssess: RequestHandler = async (req, res) => {
     return res.status(500).json({ error: "GEMINI_API_KEY is not configured. Set it in environment variables and restart the server." });
   }
 
-  const prompt = `You are a cautious medical assistant. Return a STRICT JSON object with keys: \n{"analysisHtml": string, "severityScore": number, "disclaimer": string}.\n- analysisHtml: well-structured HTML (ul/ol, p, strong) covering: top 3-5 possible causes (lay language), red-flag warnings, suggested next steps/self-care, what to tell a clinician.\n- severityScore: integer 0-100 where 0=mild, 100=critical, derived from symptoms and red-flags.\n- disclaimer: short sentence that this is not a diagnosis.\nDO NOT include any text before or after the JSON.\n\nUser info: ${age?`Age: ${age}. `:""}${sex?`Sex: ${sex}. `:""}${location?`Location: lat ${location.lat}, lon ${location.lon}${location.address?`, address ${location.address}`:""}. `:""}Symptoms: ${symptoms}`;
+  const prompt = `You are a cautious medical assistant. Return a STRICT JSON object with the exact keys:\n{\n  "analysisHtml": string,\n  "causes": string[],\n  "remedies": string[],\n  "care": string[],\n  "riskScore": number,\n  "disclaimer": string\n}\nRules:\n- analysisHtml: concise HTML with sections for causes, remedies/self‑care, and when to seek care.\n- riskScore: integer 0–100 (0=mild, 100=critical).\n- remedies: actionable home care or OTC guidance when appropriate.\n- care: red‑flag actions and when to see a clinician.\n- Use clear, non-diagnostic language.\n- Output ONLY the JSON.\n\nUser info: ${age?`Age: ${age}. `:""}${sex?`Sex: ${sex}. `:""}${location?`Location: lat ${location.lat}, lon ${location.lon}${location.address?`, address ${location.address}`:""}. `:""}Symptoms: ${symptoms}`;
 
   try {
     const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }]}],
-        safetySettings: [
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_SEXUAL", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-        ]
+        contents: [{ role: "user", parts: [{ text: prompt }]}]
       }),
     });
 
@@ -48,12 +41,33 @@ export const handleAssess: RequestHandler = async (req, res) => {
     const text: string | undefined = json.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) return res.status(500).json({ error: "No response from model" });
 
-    try {
-      const parsed = JSON.parse(text);
-      return res.json({ analysis: parsed.analysisHtml, severity: parsed.severityScore, disclaimer: parsed.disclaimer });
-    } catch {
-      return res.json({ analysis: text, severity: null, disclaimer: "This is not a diagnosis. Consult a healthcare professional." });
+    const tryParse = (t: string) => {
+      try { return JSON.parse(t); } catch {
+        const match = t.match(/\{[\s\S]*\}/m);
+        if (match) { try { return JSON.parse(match[0]); } catch {} }
+        return null;
+      }
+    };
+
+    const parsed = tryParse(text);
+    if (parsed) {
+      return res.json({
+        analysis: parsed.analysisHtml ?? null,
+        causes: parsed.causes ?? [],
+        remedies: parsed.remedies ?? parsed.cure ?? [],
+        care: parsed.care ?? parsed.whenToSeekCare ?? [],
+        riskScore: parsed.riskScore ?? parsed.severityScore ?? null,
+        disclaimer: parsed.disclaimer ?? "This is not a diagnosis. Consult a healthcare professional.",
+      });
     }
+    return res.json({
+      analysis: text,
+      causes: [],
+      remedies: [],
+      care: [],
+      riskScore: null,
+      disclaimer: "This is not a diagnosis. Consult a healthcare professional.",
+    });
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || "Internal error" });
   }
