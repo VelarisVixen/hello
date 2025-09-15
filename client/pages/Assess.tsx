@@ -14,6 +14,9 @@ export default function Assess() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [severity, setSeverity] = useState<number | null>(null);
   const [disclaimer, setDisclaimer] = useState<string | null>(null);
+  const [causes, setCauses] = useState<string[]>([]);
+  const [remedies, setRemedies] = useState<string[]>([]);
+  const [care, setCare] = useState<string[]>([]);
 
 
   const requestLocation = async (): Promise<Coords | null> => {
@@ -65,11 +68,17 @@ export default function Assess() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: loc ?? undefined }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
       if (!res.ok) throw new Error(data?.error || "Unable to analyze");
-      setAnalysis(data.analysis);
-      if (typeof data.severity === "number") setSeverity(data.severity);
+      setAnalysis(data.analysis ?? null);
+      if (typeof data.riskScore === "number") setSeverity(data.riskScore);
+      else if (typeof data.severity === "number") setSeverity(data.severity);
       if (data.disclaimer) setDisclaimer(data.disclaimer);
+      setCauses(Array.isArray(data.causes) ? data.causes : []);
+      setRemedies(Array.isArray(data.remedies) ? data.remedies : (Array.isArray(data.cure)?data.cure:[]));
+      setCare(Array.isArray(data.care) ? data.care : []);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -154,10 +163,36 @@ export default function Assess() {
           </div>
         )}
 
-        {analysis && (
+        {(analysis || causes.length || remedies.length || care.length) && (
           <div className="mt-8 rounded-xl border border-border bg-background p-6">
             <h2 className="text-xl font-semibold mb-3">Preliminary analysis</h2>
-            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: analysis.replace(/\n/g, "<br/>") }} />
+            {analysis && (
+              <div className="prose prose-slate max-w-none mb-6" dangerouslySetInnerHTML={{ __html: analysis.replace(/\n/g, "<br/>") }} />
+            )}
+            {causes.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-2">Relevant causes</h3>
+                <ul className="list-disc pl-5 space-y-1 text-foreground/90">
+                  {causes.map((c, i) => (<li key={i}>{c}</li>))}
+                </ul>
+              </div>
+            )}
+            {remedies.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-2">Remedies and care</h3>
+                <ul className="list-disc pl-5 space-y-1 text-foreground/90">
+                  {remedies.map((c, i) => (<li key={i}>{c}</li>))}
+                </ul>
+              </div>
+            )}
+            {care.length > 0 && (
+              <div className="mb-2">
+                <h3 className="font-semibold mb-2">When to seek medical help</h3>
+                <ul className="list-disc pl-5 space-y-1 text-foreground/90">
+                  {care.map((c, i) => (<li key={i}>{c}</li>))}
+                </ul>
+              </div>
+            )}
             {disclaimer && <p className="mt-4 text-sm text-foreground/60">{disclaimer}</p>}
           </div>
         )}
