@@ -22,16 +22,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Layout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<Placeholder />} />
-            <Route path="/business" element={<Placeholder />} />
-            <Route path="/apps" element={<Placeholder />} />
-            <Route path="/language" element={<Placeholder />} />
-            <Route path="/assess" element={<Assess />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<Placeholder />} />
+              <Route path="/business" element={<Placeholder />} />
+              <Route path="/apps" element={<Placeholder />} />
+              <Route path="/language" element={<Placeholder />} />
+              <Route path="/assess" element={<Assess />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </Layout>
       </BrowserRouter>
     </TooltipProvider>
