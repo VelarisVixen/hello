@@ -20,6 +20,20 @@ export default function Assess() {
   const [remedies, setRemedies] = useState<string[]>([]);
   const [care, setCare] = useState<string[]>([]);
 
+  type Hospital = {
+    name: string;
+    rating: number | null;
+    userRatingsTotal: number | null;
+    address: string;
+    openNow: boolean | null;
+    placeId: string;
+    lat: number | null;
+    lon: number | null;
+  };
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [hospitalsLoading, setHospitalsLoading] = useState(false);
+  const [hospitalsError, setHospitalsError] = useState<string | null>(null);
+
   const requestLocation = async (): Promise<Coords | null> => {
     if (!("geolocation" in navigator)) {
       setLocStatus("Geolocation not supported");
