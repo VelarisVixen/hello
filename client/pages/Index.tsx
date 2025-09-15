@@ -125,7 +125,7 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground">Get a symptom checker for your business!</h2>
             <p className="mt-4 text-lg text-foreground/80">Powered by Infermedica, Symptomate is used by healthcare facilities, insurance providers, and other companies to improve online, preliminary symptom assessment and triage processes.</p>
             <div className="mt-6">
-              <Button asChild variant="outline" className="px-6 py-5 text-[15px] font-semibold">
+              <Button asChild variant="outline" className="px-6 py-5 text-[15px] font-semibold border-primary text-primary hover:bg-primary/5">
                 <a href="https://infermedica.com/get-in-touch" target="_blank" rel="noreferrer">Get in touch</a>
               </Button>
             </div>
