@@ -223,7 +223,7 @@ export default function Assess() {
               />
             </div>
             <div className="mt-1 text-xs text-foreground/60">
-              {severity}/100 (0=mild, 100=critical)
+              {severity}/100 – {severity < 33 ? "low" : severity < 66 ? "moderate" : "high"} risk (0=mild, 100=critical)
             </div>
           </div>
         )}
