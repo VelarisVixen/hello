@@ -46,9 +46,6 @@ export default function Index() {
               <Button asChild className="px-6 py-5 text-[15px] font-semibold">
                 <Link to="/assess">Start assessing</Link>
               </Button>
-              <Button asChild variant="outline" className="px-6 py-5 text-[15px] font-semibold border-primary text-primary hover:bg-primary/5">
-                <Link to="/be-first/chat">Try chatbot</Link>
-              </Button>
             </div>
           </div>
           <div className="relative max-w-[580px] md:ml-auto">
