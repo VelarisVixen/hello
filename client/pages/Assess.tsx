@@ -59,13 +59,17 @@ export default function Assess() {
           loc = await requestLocation();
         } catch {}
       }
-      const apiUrl = window.location.origin + "/api/assess";
+      const apiUrl = "/api/assess";
       let res: Response;
+      // Use AbortController to avoid hanging requests
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 30000);
       try {
         res = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
+          signal: ctrl.signal,
           body: JSON.stringify({
             symptoms,
             age: age ? Number(age) : undefined,
@@ -74,10 +78,15 @@ export default function Assess() {
           }),
         });
       } catch (networkErr: any) {
+        if (networkErr.name === "AbortError") {
+          throw new Error("Request timed out. Please try again.");
+        }
         throw new Error(
           "Network error: failed to reach the server. " +
             (networkErr?.message || ""),
         );
+      } finally {
+        clearTimeout(timeout);
       }
 
       // Read response safely: clone once to capture raw text for logging/parsing
