@@ -111,7 +111,7 @@ export default function Assess() {
             data = { error: rawText };
           }
         } else {
-          data = { error: 'Failed to read response body' };
+          data = { error: "Failed to read response body" };
         }
       }
 
