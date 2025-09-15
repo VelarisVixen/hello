@@ -26,22 +26,12 @@ export default function Assess() {
     setLocStatus("Requesting permission...");
     return await new Promise<Coords | null>((resolve) => {
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
+        (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
-          let address: string | undefined;
-          try {
-            const r = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-              { headers: { Accept: "application/json" } },
-            );
-            const j = await r.json();
-            address = j?.display_name as string | undefined;
-          } catch {}
           const c: Coords = {
             lat: latitude,
             lon: longitude,
             accuracy,
-            address,
           };
           setCoords(c);
           setLocStatus("Location captured");
