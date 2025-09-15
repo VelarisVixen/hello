@@ -1,13 +1,18 @@
 import { Component, ReactNode } from "react";
 
-interface Props { children: ReactNode }
-interface State { hasError: boolean; message?: string }
+interface Props {
+  children: ReactNode;
+}
+interface State {
+  hasError: boolean;
+  message?: string;
+}
 
 export default class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
   static getDerivedStateFromError(error: any): State {
     return { hasError: true, message: error?.message || "Render error" };
-    }
+  }
   componentDidCatch(error: any, info: any) {
     console.error("UI error:", error, info);
   }
