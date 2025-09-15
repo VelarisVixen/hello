@@ -13,6 +13,7 @@ const queryClient = new QueryClient();
 
 import Layout from "@/components/site/Layout";
 import Placeholder from "@/pages/Placeholder";
+import Assess from "@/pages/Assess";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
