@@ -182,9 +182,7 @@ export default function Assess() {
                   throw new Error(
                     "Location required to search nearby hospitals",
                   );
-                const url = new URL(
-                  window.location.origin + "/api/nearby-hospitals",
-                );
+                const url = new URL("/api/nearby-hospitals", window.location.origin);
                 url.searchParams.set("lat", String(loc.lat));
                 url.searchParams.set("lon", String(loc.lon));
                 url.searchParams.set("radius", "5000");
