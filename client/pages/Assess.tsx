@@ -80,17 +80,33 @@ export default function Assess() {
         );
       }
 
-      const text = await res.text();
-      let data: any = {};
+      // Try JSON first using a clone to avoid consuming the body stream.
+      let data: any | null = null;
       try {
-        data = JSON.parse(text);
-      } catch {
-        data = { error: text };
+        data = await res.clone().json();
+      } catch {}
+
+      let rawText: string | null = null;
+      if (data == null) {
+        try {
+          rawText = await res.text();
+          try {
+            data = JSON.parse(rawText);
+          } catch {
+            data = { error: rawText };
+          }
+        } catch (readErr: any) {
+          throw new Error(
+            "Failed to read server response: " + (readErr?.message || "")
+          );
+        }
       }
+
       if (!res.ok) {
         const serverMessage = data?.error || `${res.status} ${res.statusText}`;
         throw new Error(serverMessage);
       }
+
       setAnalysis(data.analysis ?? null);
       if (typeof data.riskScore === "number") setSeverity(data.riskScore);
       else if (typeof data.severity === "number") setSeverity(data.severity);
