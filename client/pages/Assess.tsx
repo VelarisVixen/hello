@@ -63,15 +63,26 @@ export default function Assess() {
       if (!loc) {
         try { loc = await requestLocation(); } catch {}
       }
-      const res = await fetch("/api/assess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: loc ?? undefined }),
-      });
+      const apiUrl = window.location.origin + "/api/assess";
+      let res: Response;
+      try {
+        res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: loc ?? undefined }),
+        });
+      } catch (networkErr: any) {
+        throw new Error("Network error: failed to reach the server. " + (networkErr?.message || ""));
+      }
+
       const text = await res.text();
       let data: any = {};
       try { data = JSON.parse(text); } catch { data = { error: text }; }
-      if (!res.ok) throw new Error(data?.error || "Unable to analyze");
+      if (!res.ok) {
+        const serverMessage = data?.error || `${res.status} ${res.statusText}`;
+        throw new Error(serverMessage);
+      }
       setAnalysis(data.analysis ?? null);
       if (typeof data.riskScore === "number") setSeverity(data.riskScore);
       else if (typeof data.severity === "number") setSeverity(data.severity);
