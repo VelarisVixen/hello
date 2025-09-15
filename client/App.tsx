@@ -11,17 +11,28 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+import Layout from "@/components/site/Layout";
+import Placeholder from "@/pages/Placeholder";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<Placeholder />} />
+            <Route path="/business" element={<Placeholder />} />
+            <Route path="/apps" element={<Placeholder />} />
+            <Route path="/language" element={<Placeholder />} />
+            <Route path="/interview" element={<Placeholder />} />
+            <Route path="/be-first/chat" element={<Placeholder />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Layout>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
