@@ -18,7 +18,6 @@ export default function Assess() {
   const [remedies, setRemedies] = useState<string[]>([]);
   const [care, setCare] = useState<string[]>([]);
 
-
   const requestLocation = async (): Promise<Coords | null> => {
     if (!("geolocation" in navigator)) {
       setLocStatus("Geolocation not supported");
@@ -33,12 +32,17 @@ export default function Assess() {
           try {
             const r = await fetch(
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-              { headers: { Accept: "application/json" } }
+              { headers: { Accept: "application/json" } },
             );
             const j = await r.json();
             address = j?.display_name as string | undefined;
           } catch {}
-          const c: Coords = { lat: latitude, lon: longitude, accuracy, address };
+          const c: Coords = {
+            lat: latitude,
+            lon: longitude,
+            accuracy,
+            address,
+          };
           setCoords(c);
           setLocStatus("Location captured");
           resolve(c);
@@ -47,7 +51,7 @@ export default function Assess() {
           setLocStatus(err.message || "Location denied");
           resolve(null);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       );
     });
   };
@@ -61,7 +65,9 @@ export default function Assess() {
     try {
       let loc = coords;
       if (!loc) {
-        try { loc = await requestLocation(); } catch {}
+        try {
+          loc = await requestLocation();
+        } catch {}
       }
       const apiUrl = window.location.origin + "/api/assess";
       let res: Response;
@@ -70,15 +76,27 @@ export default function Assess() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
-          body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: loc ?? undefined }),
+          body: JSON.stringify({
+            symptoms,
+            age: age ? Number(age) : undefined,
+            sex,
+            location: loc ?? undefined,
+          }),
         });
       } catch (networkErr: any) {
-        throw new Error("Network error: failed to reach the server. " + (networkErr?.message || ""));
+        throw new Error(
+          "Network error: failed to reach the server. " +
+            (networkErr?.message || ""),
+        );
       }
 
       const text = await res.text();
       let data: any = {};
-      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
       if (!res.ok) {
         const serverMessage = data?.error || `${res.status} ${res.statusText}`;
         throw new Error(serverMessage);
@@ -88,7 +106,13 @@ export default function Assess() {
       else if (typeof data.severity === "number") setSeverity(data.severity);
       if (data.disclaimer) setDisclaimer(data.disclaimer);
       setCauses(Array.isArray(data.causes) ? data.causes : []);
-      setRemedies(Array.isArray(data.remedies) ? data.remedies : (Array.isArray(data.cure)?data.cure:[]));
+      setRemedies(
+        Array.isArray(data.remedies)
+          ? data.remedies
+          : Array.isArray(data.cure)
+            ? data.cure
+            : [],
+      );
       setCare(Array.isArray(data.care) ? data.care : []);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -100,17 +124,35 @@ export default function Assess() {
   return (
     <section className="py-12 md:py-20">
       <div className="container max-w-3xl">
-        <h1 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground mb-2">Start assessing</h1>
-        <p className="text-foreground/70 mb-8">We use your approximate location to tailor guidance (e.g., seasonal illnesses). You can still continue without it.</p>
+        <h1 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground mb-2">
+          Start assessing
+        </h1>
+        <p className="text-foreground/70 mb-8">
+          We use your approximate location to tailor guidance (e.g., seasonal
+          illnesses). You can still continue without it.
+        </p>
 
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="text-sm text-foreground/70">{coords ? `📍 ${coords.address ?? `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`}` : locStatus}</div>
-          <Button type="button" variant="outline" onClick={requestLocation} className="border-primary text-primary hover:bg-primary/5 px-3 py-2 h-auto">Share location</Button>
+          <div className="text-sm text-foreground/70">
+            {coords
+              ? `📍 ${coords.address ?? `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`}`
+              : locStatus}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={requestLocation}
+            className="border-primary text-primary hover:bg-primary/5 px-3 py-2 h-auto"
+          >
+            Share location
+          </Button>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">Your symptoms</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">
+              Your symptoms
+            </label>
             <textarea
               required
               value={symptoms}
@@ -121,7 +163,9 @@ export default function Assess() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-2">Age</label>
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
+                Age
+              </label>
               <input
                 type="number"
                 min={0}
@@ -132,16 +176,18 @@ export default function Assess() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-foreground/80 mb-2">Sex</label>
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
+                Sex
+              </label>
               <div className="flex gap-2">
-                {(["female","male","other"] as const).map((s) => (
+                {(["female", "male", "other"] as const).map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setSex(s)}
-                    className={`px-3 py-2 rounded-md border ${sex===s?"border-primary text-primary bg-primary/5":"border-border text-foreground/80 hover:bg-accent"}`}
+                    className={`px-3 py-2 rounded-md border ${sex === s ? "border-primary text-primary bg-primary/5" : "border-border text-foreground/80 hover:bg-accent"}`}
                   >
-                    {s[0].toUpperCase()+s.slice(1)}
+                    {s[0].toUpperCase() + s.slice(1)}
                   </button>
                 ))}
               </div>
@@ -149,7 +195,11 @@ export default function Assess() {
           </div>
 
           <div>
-            <Button type="submit" disabled={loading} className="px-6 py-5 text-[15px] font-semibold">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-5 text-[15px] font-semibold"
+            >
               {loading ? "Analyzing..." : "Start assessing"}
             </Button>
           </div>
@@ -157,14 +207,18 @@ export default function Assess() {
 
         {severity !== null && (
           <div className="mt-8">
-            <div className="mb-2 text-sm font-medium text-foreground/80">Severity score</div>
+            <div className="mb-2 text-sm font-medium text-foreground/80">
+              Severity score
+            </div>
             <div className="h-3 w-full rounded-full bg-accent">
               <div
                 className="h-3 rounded-full bg-primary transition-all"
                 style={{ width: `${Math.min(100, Math.max(0, severity))}%` }}
               />
             </div>
-            <div className="mt-1 text-xs text-foreground/60">{severity}/100 (0=mild, 100=critical)</div>
+            <div className="mt-1 text-xs text-foreground/60">
+              {severity}/100 (0=mild, 100=critical)
+            </div>
           </div>
         )}
 
@@ -178,13 +232,20 @@ export default function Assess() {
           <div className="mt-8 rounded-xl border border-border bg-background p-6">
             <h2 className="text-xl font-semibold mb-3">Preliminary analysis</h2>
             {analysis && (
-              <div className="prose prose-slate max-w-none mb-6" dangerouslySetInnerHTML={{ __html: analysis.replace(/\n/g, "<br/>") }} />
+              <div
+                className="prose prose-slate max-w-none mb-6"
+                dangerouslySetInnerHTML={{
+                  __html: analysis.replace(/\n/g, "<br/>"),
+                }}
+              />
             )}
             {causes.length > 0 && (
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Relevant causes</h3>
                 <ul className="list-disc pl-5 space-y-1 text-foreground/90">
-                  {causes.map((c, i) => (<li key={i}>{c}</li>))}
+                  {causes.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -192,19 +253,27 @@ export default function Assess() {
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Remedies and care</h3>
                 <ul className="list-disc pl-5 space-y-1 text-foreground/90">
-                  {remedies.map((c, i) => (<li key={i}>{c}</li>))}
+                  {remedies.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
                 </ul>
               </div>
             )}
             {care.length > 0 && (
               <div className="mb-2">
-                <h3 className="font-semibold mb-2">When to seek medical help</h3>
+                <h3 className="font-semibold mb-2">
+                  When to seek medical help
+                </h3>
                 <ul className="list-disc pl-5 space-y-1 text-foreground/90">
-                  {care.map((c, i) => (<li key={i}>{c}</li>))}
+                  {care.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
                 </ul>
               </div>
             )}
-            {disclaimer && <p className="mt-4 text-sm text-foreground/60">{disclaimer}</p>}
+            {disclaimer && (
+              <p className="mt-4 text-sm text-foreground/60">{disclaimer}</p>
+            )}
           </div>
         )}
       </div>
