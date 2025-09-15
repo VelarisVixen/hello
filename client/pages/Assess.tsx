@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import RiskGauge from "@/components/site/RiskGauge";
+import SymptomStats from "@/components/site/SymptomStats";
 
 type Coords = { lat: number; lon: number; accuracy?: number; address?: string };
 
