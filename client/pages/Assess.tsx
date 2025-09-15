@@ -1,28 +1,71 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+
+type Coords = { lat: number; lon: number; accuracy?: number; address?: string };
 
 export default function Assess() {
   const [symptoms, setSymptoms] = useState("");
   const [age, setAge] = useState<string>("");
   const [sex, setSex] = useState("female");
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const [locStatus, setLocStatus] = useState<string>("Location not requested");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [severity, setSeverity] = useState<number | null>(null);
+  const [disclaimer, setDisclaimer] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Ask for location as soon as the page opens
+    requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const requestLocation = async () => {
+    if (!("geolocation" in navigator)) {
+      setLocStatus("Geolocation not supported");
+      return;
+    }
+    setLocStatus("Requesting permission...");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        let address: string | undefined;
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+            { headers: { "Accept": "application/json" } }
+          );
+          const j = await r.json();
+          address = j?.display_name as string | undefined;
+        } catch {}
+        setCoords({ lat: latitude, lon: longitude, accuracy, address });
+        setLocStatus("Location captured");
+      },
+      (err) => {
+        setLocStatus(err.message || "Location denied");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setAnalysis(null);
+    setSeverity(null);
     try {
       const res = await fetch("/api/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex }),
+        body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: coords ?? undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Unable to analyze");
       setAnalysis(data.analysis);
+      if (typeof data.severity === "number") setSeverity(data.severity);
+      if (data.disclaimer) setDisclaimer(data.disclaimer);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -34,7 +77,12 @@ export default function Assess() {
     <section className="py-12 md:py-20">
       <div className="container max-w-3xl">
         <h1 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground mb-2">Start assessing</h1>
-        <p className="text-foreground/70 mb-8">Describe your symptoms in your own words and get an AI-generated overview of possible causes and next steps. This is not a diagnosis.</p>
+        <p className="text-foreground/70 mb-8">We use your approximate location to tailor guidance (e.g., seasonal illnesses). You can still continue without it.</p>
+
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="text-sm text-foreground/70">{coords ? `📍 ${coords.address ?? `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`}` : locStatus}</div>
+          <Button type="button" variant="outline" onClick={requestLocation} className="border-primary text-primary hover:bg-primary/5 px-3 py-2 h-auto">Share location</Button>
+        </div>
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div>
@@ -83,6 +131,19 @@ export default function Assess() {
           </div>
         </form>
 
+        {severity !== null && (
+          <div className="mt-8">
+            <div className="mb-2 text-sm font-medium text-foreground/80">Severity score</div>
+            <div className="h-3 w-full rounded-full bg-accent">
+              <div
+                className="h-3 rounded-full bg-primary transition-all"
+                style={{ width: `${Math.min(100, Math.max(0, severity))}%` }}
+              />
+            </div>
+            <div className="mt-1 text-xs text-foreground/60">{severity}/100 (0=mild, 100=critical)</div>
+          </div>
+        )}
+
         {error && (
           <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
             {error}
@@ -93,6 +154,7 @@ export default function Assess() {
           <div className="mt-8 rounded-xl border border-border bg-background p-6">
             <h2 className="text-xl font-semibold mb-3">Preliminary analysis</h2>
             <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: analysis.replace(/\n/g, "<br/>") }} />
+            {disclaimer && <p className="mt-4 text-sm text-foreground/60">{disclaimer}</p>}
           </div>
         )}
       </div>
