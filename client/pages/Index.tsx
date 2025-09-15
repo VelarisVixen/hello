@@ -44,7 +44,7 @@ export default function Index() {
             </ul>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Button asChild className="px-6 py-5 text-[15px] font-semibold">
-                <Link to="/interview">Start interview</Link>
+                <Link to="/assess">Start assessing</Link>
               </Button>
               <Button asChild variant="outline" className="px-6 py-5 text-[15px] font-semibold border-primary text-primary hover:bg-primary/5">
                 <Link to="/be-first/chat">Try chatbot</Link>
