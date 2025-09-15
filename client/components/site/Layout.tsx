@@ -19,7 +19,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <Button asChild className="px-5 py-2.5 text-[15px] font-semibold">
-            <Link to="/interview">Start interview</Link>
+            <Link to="/assess">Start assessing</Link>
           </Button>
         </div>
       </div>
