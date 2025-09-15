@@ -17,6 +17,7 @@ import Layout from "@/components/site/Layout";
 import Placeholder from "@/pages/Placeholder";
 import Assess from "@/pages/Assess";
 import ErrorBoundary from "@/components/site/ErrorBoundary";
+import NavigatorBridge from "@/components/site/NavigatorBridge";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
