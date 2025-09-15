@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 type Coords = { lat: number; lon: number; accuracy?: number; address?: string };
@@ -15,38 +15,38 @@ export default function Assess() {
   const [severity, setSeverity] = useState<number | null>(null);
   const [disclaimer, setDisclaimer] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Ask for location as soon as the page opens
-    requestLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  const requestLocation = async () => {
+  const requestLocation = async (): Promise<Coords | null> => {
     if (!("geolocation" in navigator)) {
       setLocStatus("Geolocation not supported");
-      return;
+      return null;
     }
     setLocStatus("Requesting permission...");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        let address: string | undefined;
-        try {
-          const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            { headers: { "Accept": "application/json" } }
-          );
-          const j = await r.json();
-          address = j?.display_name as string | undefined;
-        } catch {}
-        setCoords({ lat: latitude, lon: longitude, accuracy, address });
-        setLocStatus("Location captured");
-      },
-      (err) => {
-        setLocStatus(err.message || "Location denied");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    return await new Promise<Coords | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          let address: string | undefined;
+          try {
+            const r = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+              { headers: { Accept: "application/json" } }
+            );
+            const j = await r.json();
+            address = j?.display_name as string | undefined;
+          } catch {}
+          const c: Coords = { lat: latitude, lon: longitude, accuracy, address };
+          setCoords(c);
+          setLocStatus("Location captured");
+          resolve(c);
+        },
+        (err) => {
+          setLocStatus(err.message || "Location denied");
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -56,10 +56,14 @@ export default function Assess() {
     setAnalysis(null);
     setSeverity(null);
     try {
+      let loc = coords;
+      if (!loc) {
+        try { loc = await requestLocation(); } catch {}
+      }
       const res = await fetch("/api/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: coords ?? undefined }),
+        body: JSON.stringify({ symptoms, age: age ? Number(age) : undefined, sex, location: loc ?? undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Unable to analyze");
