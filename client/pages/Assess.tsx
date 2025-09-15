@@ -213,20 +213,7 @@ export default function Assess() {
 
         {severity !== null && (
           <div className="mt-8">
-            <div className="mb-2 text-sm font-medium text-foreground/80">
-              Severity score
-            </div>
-            <div className="h-3 w-full rounded-full bg-accent">
-              <div
-                className="h-3 rounded-full bg-primary transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, severity))}%` }}
-              />
-            </div>
-            <div className="mt-1 text-xs text-foreground/60">
-              {severity}/100 –{" "}
-              {severity < 33 ? "low" : severity < 66 ? "moderate" : "high"} risk
-              (0=mild, 100=critical)
-            </div>
+            <RiskGauge score={severity} />
           </div>
         )}
 
