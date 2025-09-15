@@ -178,8 +178,13 @@ export default function Assess() {
               try {
                 let loc = coords;
                 if (!loc) loc = await requestLocation();
-                if (!loc) throw new Error("Location required to search nearby hospitals");
-                const url = new URL(window.location.origin + "/api/nearby-hospitals");
+                if (!loc)
+                  throw new Error(
+                    "Location required to search nearby hospitals",
+                  );
+                const url = new URL(
+                  window.location.origin + "/api/nearby-hospitals",
+                );
                 url.searchParams.set("lat", String(loc.lat));
                 url.searchParams.set("lon", String(loc.lon));
                 url.searchParams.set("radius", "5000");
@@ -200,7 +205,9 @@ export default function Assess() {
           <Button
             type="button"
             onClick={() => {
-              const nav = (window as any).appNavigate as undefined | ((path: string, state?: any) => void);
+              const nav = (window as any).appNavigate as
+                | undefined
+                | ((path: string, state?: any) => void);
               const state = { analysis, causes, severity, symptoms };
               if (nav) nav("/doctors", state);
               else window.location.href = "/doctors";
@@ -337,7 +344,9 @@ export default function Assess() {
           <div className="mt-8 rounded-xl border border-border bg-background p-6">
             <h2 className="text-xl font-semibold mb-3">Hospitals near you</h2>
             {hospitalsLoading && (
-              <div className="text-foreground/70">Searching nearby hospitals…</div>
+              <div className="text-foreground/70">
+                Searching nearby hospitals…
+              </div>
             )}
             {hospitalsError && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-destructive mb-3">
@@ -347,14 +356,23 @@ export default function Assess() {
             {hospitals.length > 0 && (
               <ul className="grid gap-3">
                 {hospitals.map((h) => (
-                  <li key={h.placeId} className="p-4 rounded-lg border border-border">
+                  <li
+                    key={h.placeId}
+                    className="p-4 rounded-lg border border-border"
+                  >
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <div className="font-medium">{h.name}</div>
-                        <div className="text-sm text-foreground/70">{h.address}</div>
+                        <div className="text-sm text-foreground/70">
+                          {h.address}
+                        </div>
                         <div className="text-xs text-foreground/60">
-                          {h.rating ? `Rating ${h.rating} (${h.userRatingsTotal ?? 0})` : "Rating N/A"}
-                          {h.openNow !== null ? ` • ${h.openNow ? "Open now" : "Closed"}` : ""}
+                          {h.rating
+                            ? `Rating ${h.rating} (${h.userRatingsTotal ?? 0})`
+                            : "Rating N/A"}
+                          {h.openNow !== null
+                            ? ` • ${h.openNow ? "Open now" : "Closed"}`
+                            : ""}
                         </div>
                       </div>
                       <div className="flex gap-2">
