@@ -168,6 +168,54 @@ export default function Assess() {
           >
             Share location
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              setHospitalsError(null);
+              setHospitals([]);
+              setHospitalsLoading(true);
+              try {
+                let loc = coords;
+                if (!loc) loc = await requestLocation();
+                if (!loc) throw new Error("Location required to search nearby hospitals");
+                const url = new URL(window.location.origin + "/api/nearby-hospitals");
+                url.searchParams.set("lat", String(loc.lat));
+                url.searchParams.set("lon", String(loc.lon));
+                url.searchParams.set("radius", "5000");
+                const r = await fetch(url.toString());
+                const d = await r.json();
+                if (!r.ok) throw new Error(d?.error || r.statusText);
+                setHospitals(Array.isArray(d.hospitals) ? d.hospitals : []);
+              } catch (e: any) {
+                setHospitalsError(e?.message || "Failed to fetch hospitals");
+              } finally {
+                setHospitalsLoading(false);
+              }
+            }}
+            className="px-3 py-2 h-auto"
+          >
+            Hospitals near you
+          </Button>
+          <Button
+            type="button"
+            onClick={async () => {
+              try {
+                let loc = coords;
+                if (!loc) loc = await requestLocation();
+                const q = new URLSearchParams({
+                  q: `book doctor appointment ${symptoms ? symptoms.slice(0, 60) : "near me"}`,
+                });
+                const mapsUrl = loc
+                  ? `https://www.google.com/maps/search/?api=1&query=doctor+appointment&query_place_id=&center=${loc.lat},${loc.lon}`
+                  : `https://www.google.com/search?${q.toString()}`;
+                window.open(mapsUrl, "_blank", "noopener,noreferrer");
+              } catch {}
+            }}
+            className="px-3 py-2 h-auto"
+          >
+            Book appointment
+          </Button>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-6">
@@ -290,6 +338,58 @@ export default function Assess() {
 
         {(severity !== null || causes.length > 0) && (
           <SymptomStats symptoms={symptoms} causes={causes} />
+        )}
+
+        {(hospitalsLoading || hospitalsError || hospitals.length > 0) && (
+          <div className="mt-8 rounded-xl border border-border bg-background p-6">
+            <h2 className="text-xl font-semibold mb-3">Hospitals near you</h2>
+            {hospitalsLoading && (
+              <div className="text-foreground/70">Searching nearby hospitals…</div>
+            )}
+            {hospitalsError && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-destructive mb-3">
+                {hospitalsError}
+              </div>
+            )}
+            {hospitals.length > 0 && (
+              <ul className="grid gap-3">
+                {hospitals.map((h) => (
+                  <li key={h.placeId} className="p-4 rounded-lg border border-border">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="font-medium">{h.name}</div>
+                        <div className="text-sm text-foreground/70">{h.address}</div>
+                        <div className="text-xs text-foreground/60">
+                          {h.rating ? `Rating ${h.rating} (${h.userRatingsTotal ?? 0})` : "Rating N/A"}
+                          {h.openNow !== null ? ` • ${h.openNow ? "Open now" : "Closed"}` : ""}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <a
+                          href={`https://www.google.com/maps/place/?q=place_id:${h.placeId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-2 rounded-md border border-border text-sm hover:bg-accent"
+                        >
+                          Open in Maps
+                        </a>
+                        {h.lat !== null && h.lon !== null && (
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-2 rounded-md border border-border text-sm hover:bg-accent"
+                          >
+                            Directions
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
     </section>
