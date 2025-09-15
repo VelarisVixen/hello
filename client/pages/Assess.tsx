@@ -75,20 +75,23 @@ export default function Assess() {
           loc = await requestLocation();
         } catch {}
       }
-      const apiUrl = window.location.origin + "/api/assess";
+      const apiUrl = "/api/assess";
       let res: Response;
       try {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 30000);
         res = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
           body: JSON.stringify({
             symptoms,
             age: age ? Number(age) : undefined,
             sex,
             location: loc ?? undefined,
           }),
+          signal: ctrl.signal,
         });
+        clearTimeout(timeout);
       } catch (networkErr: any) {
         throw new Error(
           "Network error: failed to reach the server. " +
