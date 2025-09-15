@@ -17,6 +17,8 @@ export default function RiskGauge({ score }: RiskGaugeProps) {
   const offset = circumference - (value / 100) * circumference;
 
   const color = value < 33 ? "#10b981" : value < 66 ? "#f59e0b" : "#ef4444"; // green, yellow, red
+  const level = value < 33 ? "Mild" : value < 66 ? "Moderate" : "Critical";
+  const action = level === "Mild" ? "home remedy" : level === "Moderate" ? "appointment" : "doctor now";
 
   return (
     <div className="flex items-center gap-4">
@@ -60,30 +62,15 @@ export default function RiskGauge({ score }: RiskGaugeProps) {
           Risk severity
         </div>
         <div className="text-sm text-foreground/60">
-          {value}/100 — {value < 33 ? "low" : value < 66 ? "moderate" : "high"}
+          {value}/100 — {level}
         </div>
-        <div className="flex gap-2 mt-2">
-          <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: "#10b981" }}
-            ></span>
-            low
-          </span>
-          <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: "#f59e0b" }}
-            ></span>
-            moderate
-          </span>
-          <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: "#ef4444" }}
-            ></span>
-            high
-          </span>
+        <div className="text-xs text-foreground/70 mt-1">
+          Recommendation: {level === "Critical" ? "doctor now" : level === "Moderate" ? "appointment" : "home remedy"}
+        </div>
+        <div className="flex gap-3 mt-2 text-xs text-foreground/70">
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{background:'#ef4444'}}></span>Critical → doctor now</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{background:'#f59e0b'}}></span>Moderate → appointment</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{background:'#10b981'}}></span>Mild → home remedy</span>
         </div>
       </div>
     </div>
