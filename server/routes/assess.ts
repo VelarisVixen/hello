@@ -69,6 +69,7 @@ export const handleAssess: RequestHandler = async (req, res) => {
       disclaimer: "This is not a diagnosis. Consult a healthcare professional.",
     });
   } catch (e: any) {
+    console.error('Error in /api/assess:', e);
     return res.status(500).json({ error: e?.message || "Internal error" });
   }
 };
