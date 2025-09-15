@@ -35,7 +35,7 @@ function Footer() {
           <h3 className="text-[15px] font-semibold text-foreground/70 mb-3">Symptomate</h3>
           <ul className="space-y-2 text-foreground/80">
             <li><a href="/about" className="hover:text-foreground">About us</a></li>
-            <li><a href="/interview" className="hover:text-foreground">Interview</a></li>
+            <li><a href="/assess" className="hover:text-foreground">Start assessing</a></li>
             <li><a href="https://infermedica.com/blog" target="_blank" rel="noreferrer" className="hover:text-foreground">Blog</a></li>
             <li><a href="https://infermedica.com/press" target="_blank" rel="noreferrer" className="hover:text-foreground">Press kit</a></li>
           </ul>
