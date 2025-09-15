@@ -271,6 +271,10 @@ export default function Assess() {
             )}
           </div>
         )}
+
+        {(severity !== null || causes.length > 0) && (
+          <SymptomStats symptoms={symptoms} causes={causes} />
+        )}
       </div>
     </section>
   );
