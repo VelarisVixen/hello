@@ -199,18 +199,11 @@ export default function Assess() {
           </Button>
           <Button
             type="button"
-            onClick={async () => {
-              try {
-                let loc = coords;
-                if (!loc) loc = await requestLocation();
-                const q = new URLSearchParams({
-                  q: `book doctor appointment ${symptoms ? symptoms.slice(0, 60) : "near me"}`,
-                });
-                const mapsUrl = loc
-                  ? `https://www.google.com/maps/search/?api=1&query=doctor+appointment&query_place_id=&center=${loc.lat},${loc.lon}`
-                  : `https://www.google.com/search?${q.toString()}`;
-                window.open(mapsUrl, "_blank", "noopener,noreferrer");
-              } catch {}
+            onClick={() => {
+              const nav = (window as any).appNavigate as undefined | ((path: string, state?: any) => void);
+              const state = { analysis, causes, severity, symptoms };
+              if (nav) nav("/doctors", state);
+              else window.location.href = "/doctors";
             }}
             className="px-3 py-2 h-auto"
           >
