@@ -12,6 +12,15 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Ensure API endpoints always return JSON and have correct content-type
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    next();
+  });
+
+  // Health check for deployments
+  app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
   // Example API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
