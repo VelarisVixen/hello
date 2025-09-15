@@ -35,7 +35,10 @@ export default function RiskGauge({ score }: RiskGaugeProps) {
           strokeLinecap="round"
           strokeWidth={stroke}
           strokeDasharray={`${circumference} ${circumference}`}
-          style={{ strokeDashoffset: offset, transition: "stroke-dashoffset 0.6s ease" }}
+          style={{
+            strokeDashoffset: offset,
+            transition: "stroke-dashoffset 0.6s ease",
+          }}
           r={normalizedRadius}
           cx={radius}
           cy={radius}
@@ -53,12 +56,34 @@ export default function RiskGauge({ score }: RiskGaugeProps) {
         </text>
       </svg>
       <div>
-        <div className="text-sm font-medium text-foreground/80">Risk severity</div>
-        <div className="text-sm text-foreground/60">{value}/100 — {value < 33 ? "low" : value < 66 ? "moderate" : "high"}</div>
+        <div className="text-sm font-medium text-foreground/80">
+          Risk severity
+        </div>
+        <div className="text-sm text-foreground/60">
+          {value}/100 — {value < 33 ? "low" : value < 66 ? "moderate" : "high"}
+        </div>
         <div className="flex gap-2 mt-2">
-          <span className="inline-flex items-center gap-1 text-xs text-foreground/70"><span className="h-2 w-2 rounded-full" style={{background:'#10b981'}}></span>low</span>
-          <span className="inline-flex items-center gap-1 text-xs text-foreground/70"><span className="h-2 w-2 rounded-full" style={{background:'#f59e0b'}}></span>moderate</span>
-          <span className="inline-flex items-center gap-1 text-xs text-foreground/70"><span className="h-2 w-2 rounded-full" style={{background:'#ef4444'}}></span>high</span>
+          <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: "#10b981" }}
+            ></span>
+            low
+          </span>
+          <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: "#f59e0b" }}
+            ></span>
+            moderate
+          </span>
+          <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: "#ef4444" }}
+            ></span>
+            high
+          </span>
         </div>
       </div>
     </div>
